@@ -25,6 +25,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cz.msebera.android.httpclient.Header;
+import jp.wasabeef.picasso.transformations.RoundedCornersTransformation;
 
 import static android.text.format.DateUtils.SECOND_IN_MILLIS;
 
@@ -118,6 +119,8 @@ public class TweetsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         v.tvScreenName.setText("@" + tweet.getUser().getScreenName());
         v.ivProfileImage.setImageResource(android.R.color.transparent);
         Picasso.with(mContext).load(tweet.getUser().getProfileImageUrl())
+                .transform(new RoundedCornersTransformation(10, 10))
+                .resize(0, 80)
                 .into(v.ivProfileImage);
         CharSequence since = TweetsAdapter.formatCreatedAt(tweet.getCreatedAt());
         if (since != null)

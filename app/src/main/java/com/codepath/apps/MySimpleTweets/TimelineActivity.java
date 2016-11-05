@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -18,6 +19,7 @@ import com.codepath.apps.MySimpleTweets.fragments.ChangeStatusFragment;
 import com.codepath.apps.MySimpleTweets.models.Tweet;
 import com.codepath.apps.MySimpleTweets.models.Tweet_Table;
 import com.codepath.apps.MySimpleTweets.models.User;
+import com.codepath.apps.MySimpleTweets.utils.DividerItemDecoration;
 import com.codepath.apps.MySimpleTweets.utils.EndlessRecyclerViewScrollListener;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.raizlabs.android.dbflow.sql.language.Delete;
@@ -85,6 +87,11 @@ public class TimelineActivity extends AppCompatActivity implements ChangeStatusF
                 }
             }
         });
+
+        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(rvTweets.getContext(),
+                linearLayoutManager.getOrientation());
+        rvTweets.addItemDecoration(dividerItemDecoration);
+        rvTweets.setItemAnimator(new DefaultItemAnimator());
 
         getHandle();
         getProfilePic();
