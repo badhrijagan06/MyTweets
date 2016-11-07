@@ -19,6 +19,7 @@ import com.raizlabs.android.dbflow.config.FlowManager;
 public class TwitterApplication extends Application {
 	private static Context context;
 
+
 	@Override
 	public void onCreate() {
 		super.onCreate();

@@ -1,6 +1,7 @@
 package com.codepath.apps.MySimpleTweets.adapters;
 
 import android.content.Context;
+import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
@@ -11,6 +12,7 @@ import android.widget.TextView;
 
 import com.codepath.apps.MySimpleTweets.R;
 import com.codepath.apps.MySimpleTweets.TwitterApplication;
+import com.codepath.apps.MySimpleTweets.activities.ProfileActivity;
 import com.codepath.apps.MySimpleTweets.models.Tweet;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.squareup.picasso.Picasso;
@@ -115,13 +117,25 @@ public class TweetsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         Tweet tweet = mTweets.get(position);
         ViewHolder v = (ViewHolder)holder;
         v.tvBody.setText(tweet.getBody());
-        v.tvUserName.setText(tweet.getUser().getScreenName());
+        v.tvUserName.setText(tweet.getUser().getName());
         v.tvScreenName.setText("@" + tweet.getUser().getScreenName());
         v.ivProfileImage.setImageResource(android.R.color.transparent);
         Picasso.with(mContext).load(tweet.getUser().getProfileImageUrl())
                 .transform(new RoundedCornersTransformation(10, 10))
                 .resize(0, 80)
                 .into(v.ivProfileImage);
+        v.ivProfileImage.setTag(tweet.getUser().getScreenName());
+
+        v.ivProfileImage.setOnClickListener(new View.OnClickListener() {
+                                                @Override
+                                                public void onClick(final View v) {
+                                                    final String screenName = (String) v.getTag();
+                                                    Intent i = new Intent(mContext, ProfileActivity.class);
+                                                    i.putExtra("screen_name", screenName);
+                                                    mContext.startActivity(i);
+                                                }
+                                            });
+
         CharSequence since = TweetsAdapter.formatCreatedAt(tweet.getCreatedAt());
         if (since != null)
             v.tvTimeElapsed.setText(since);
