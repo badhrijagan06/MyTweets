@@ -4,43 +4,54 @@
 
 package com.codepath.apps.MySimpleTweets.fragments;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.codepath.apps.MySimpleTweets.R;
 import com.codepath.apps.MySimpleTweets.TwitterApplication;
-import com.codepath.apps.MySimpleTweets.TwitterClient;
 import com.codepath.apps.MySimpleTweets.models.Tweet;
+import com.codepath.apps.MySimpleTweets.models.User;
+import com.codepath.apps.MySimpleTweets.utils.TwitterClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONObject;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.Unbinder;
 import cz.msebera.android.httpclient.Header;
+import jp.wasabeef.picasso.transformations.RoundedCornersTransformation;
 
 
 public class ChangeStatusFragment extends DialogFragment {
 
-    private EditText etBody;
-    private TextView tvHandle;
-    private ImageView ivPic;
-    private Button btTweet;
-    private TextView tvRemaining;
-    private ImageButton ibCancel;
+    @BindView(R.id.etBody) EditText etBody;
+    @BindView(R.id.tvHandle) TextView tvHandle;
+    @BindView(R.id.ivProfilePic) ImageView ivPic;
+    @BindView(R.id.btTweet) ImageButton btTweet;
+    @BindView(R.id.tvRemaining) TextView tvRemaining;
+    @BindView(R.id.pbLoadingCompose) ProgressBar progressBar;
+
+    private Unbinder unbinder;
+    private String screenName;
+    private long inReplyTo;
+    private TwitterClient client;
+    private User user;
 
 
     public ChangeStatusFragment() {
@@ -49,11 +60,11 @@ public class ChangeStatusFragment extends DialogFragment {
         // Use `newInstance` instead as shown below
     }
 
-    public static ChangeStatusFragment newInstance(String handle, String picUrl) {
+    public static ChangeStatusFragment newInstance(String screen_name, long in_reply_to) {
         ChangeStatusFragment frag = new ChangeStatusFragment();
         Bundle args = new Bundle();
-        args.putString("handle", handle);
-        args.putString("image", picUrl);
+        args.putString("screen_name", screen_name);
+        args.putLong("in_reply_to", in_reply_to);
         frag.setArguments(args);
         return frag;
     }
@@ -61,29 +72,50 @@ public class ChangeStatusFragment extends DialogFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_compose, container);
+        View v = inflater.inflate(R.layout.fragment_compose, container);
+        unbinder = ButterKnife.bind(this, v);
+        client.getUserInfo(new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                user = User.fromJSON(response);
+                //getActivity().getSupportActionBar().setTitle("@" + user.getScreenName());
+                populateUserDetails(user);
+                progressBar.setVisibility(ProgressBar.GONE);
+            }
 
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject error) {
+                if (error != null)
+                    Log.d("Badhri", error.toString());
+                /*if (statusCode == 88 ) {
+                    postDelayed(since_id, max_id);
+                }*/
+            }
+        }, screenName);
+        return v;
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        // Get field from view
-        etBody = (EditText) view.findViewById(R.id.etBody);
-        tvHandle = (TextView)view.findViewById(R.id.tvHandle);
-        ivPic = (ImageView) view.findViewById(R.id.ivProfilePic);
-        btTweet = (Button) view.findViewById(R.id.btTweet);
-        tvRemaining = (TextView) view.findViewById(R.id.tvRemaining);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        client = TwitterApplication.getRestClient();
+        screenName = getArguments().getString("screen_name");
+        inReplyTo = getArguments().getLong("in_reply_to", -1);
+    }
 
-        // Fetch arguments from bundle and set title
-        String handle = getArguments().getString("handle", "you");
-        String url = getArguments().getString("image", "none");
-        // Show soft keyboard automatically and request focus to field
-        tvHandle.setText("@" + handle);
+    public void populateUserDetails(User user) {
+        tvHandle.setText("@" + user.getScreenName());
+        if (inReplyTo != -1) {
+            etBody.setText("@" + user.getScreenName());
+        }
         etBody.requestFocus();
+
         getDialog().getWindow().setSoftInputMode(
                 WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
-        Picasso.with(getContext()).load(url).placeholder(R.drawable.proffile_default).error(R.drawable.proffile_default).into(ivPic);
+        Picasso.with(getContext()).load(user.getProfileImageUrl())
+                .transform(new RoundedCornersTransformation(10, 10))
+                .placeholder(R.drawable.proffile_default)
+                .error(R.drawable.proffile_default).into(ivPic);
 
         etBody.addTextChangedListener(new TextWatcher() {
             @Override
@@ -97,10 +129,8 @@ public class ChangeStatusFragment extends DialogFragment {
                 if (length > 140) {
                     btTweet.setClickable(false);
                     tvRemaining.setText("0 characters remaining");
-                    btTweet.setTextColor(Color.GRAY);
                 } else {
                     btTweet.setClickable(true);
-                    btTweet.setTextColor(Color.BLUE);
                     int remaining = 140 - length;
                     tvRemaining.setText(remaining + " characters remaining");
                 }
@@ -115,7 +145,7 @@ public class ChangeStatusFragment extends DialogFragment {
         btTweet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                postStatus(etBody.getText().toString(), -1);
+                postStatus(etBody.getText().toString(), inReplyTo);
             }
         });
     }
@@ -157,4 +187,8 @@ public class ChangeStatusFragment extends DialogFragment {
         void tweetPosted(Tweet tweet);
     }
 
+    @Override public void onDestroyView() {
+        super.onDestroyView();
+        unbinder.unbind();
+    }
 }

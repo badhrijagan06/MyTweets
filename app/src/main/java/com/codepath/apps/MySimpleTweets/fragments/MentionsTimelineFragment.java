@@ -2,6 +2,7 @@ package com.codepath.apps.MySimpleTweets.fragments;
 
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.codepath.apps.MySimpleTweets.models.Tweet;
 import com.loopj.android.http.JsonHttpResponseHandler;
@@ -23,6 +24,10 @@ public class MentionsTimelineFragment extends  TweetsFragment {
 
     @Override
     protected void populateTimeline(final long since_id, final long max_id) {
+        if (!isNetworkAvailable()) {
+            Toast.makeText(getActivity(), "Network not available! Try again later! ",Toast.LENGTH_LONG).show();
+            return;
+        }
 
         client.getMentionsTimeline(new JsonHttpResponseHandler(){
             @Override
@@ -52,8 +57,12 @@ public class MentionsTimelineFragment extends  TweetsFragment {
 
 
     protected void loadRecent() {
-        Tweet first = mTweets.get(0);
-        if (first != null) {
+        if (!isNetworkAvailable()) {
+            Toast.makeText(getActivity(), "Network not available! Try again later! ",Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (mTweets.size() != 0) {
+            Tweet first = mTweets.get(0);
             long since_id = first.getUid();
             client.getMentionsTimeline(new JsonHttpResponseHandler() {
                 @Override
@@ -78,7 +87,8 @@ public class MentionsTimelineFragment extends  TweetsFragment {
                     swipeContainer.setRefreshing(false);
                 }
             }, since_id, 0 );
-        }
+        } else
+            swipeContainer.setRefreshing(false);
     }
 
 }

@@ -1,4 +1,4 @@
-package com.codepath.apps.MySimpleTweets;
+package com.codepath.apps.MySimpleTweets.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -7,21 +7,24 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.astuetz.PagerSlidingTabStrip;
-import com.codepath.apps.MySimpleTweets.activities.ProfileActivity;
+import com.codepath.apps.MySimpleTweets.R;
+import com.codepath.apps.MySimpleTweets.TwitterApplication;
 import com.codepath.apps.MySimpleTweets.adapters.TweetsPagerAdapter;
 import com.codepath.apps.MySimpleTweets.fragments.ChangeStatusFragment;
 import com.codepath.apps.MySimpleTweets.fragments.HomeTimelineFragment;
 import com.codepath.apps.MySimpleTweets.models.Tweet;
+import com.codepath.apps.MySimpleTweets.utils.TwitterClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.IOException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -47,6 +50,8 @@ public class TimelineActivity extends AppCompatActivity implements ChangeStatusF
         setContentView(R.layout.activity_timeline);
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+
 
        /* FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -58,7 +63,6 @@ public class TimelineActivity extends AppCompatActivity implements ChangeStatusF
         }); */
         client = TwitterApplication.getRestClient();
         getHandle();
-        getProfilePic();
 
 
         tweetsPagerAdapter = new TweetsPagerAdapter(getSupportFragmentManager());
@@ -82,9 +86,13 @@ public class TimelineActivity extends AppCompatActivity implements ChangeStatusF
                 if (handle == null) {
                     Toast.makeText(this, "Initialization in progress.. Try Again.. ", Toast.LENGTH_LONG).show();
                 } else
-                    showEditDialog();
+                    showComposeDialog();
                 return true;
             case R.id.miProfile:
+                if (!isNetworkAvailable()) {
+                    Toast.makeText(this, "Network not available! Try again later! ",Toast.LENGTH_LONG).show();
+                    return true;
+                }
                 Intent i = new Intent(this, ProfileActivity.class);
                 i.putExtra("screen_name", handle);
                 startActivity(i);
@@ -93,9 +101,13 @@ public class TimelineActivity extends AppCompatActivity implements ChangeStatusF
         return true;
     }
 
-    private void showEditDialog() {
+    private void showComposeDialog() {
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "Network not available! Try again later! ",Toast.LENGTH_LONG).show();
+            return;
+        }
         FragmentManager fm = getSupportFragmentManager();
-        ChangeStatusFragment changeStatusFragment = ChangeStatusFragment.newInstance(handle, profilePic);
+        ChangeStatusFragment changeStatusFragment = ChangeStatusFragment.newInstance(handle, -1);
         changeStatusFragment.show(fm, "fragment_edit_name");
     }
 
@@ -115,14 +127,16 @@ public class TimelineActivity extends AppCompatActivity implements ChangeStatusF
             public void run() {
                 if (type == 0)
                     getHandle();
-                else if (type == 1)
-                    getProfilePic();
             }
         };
         handler.postDelayed(runnableCode, 60000);
     }
 
     private void getHandle() {
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "Network not available! Try again later! ",Toast.LENGTH_LONG).show();
+            return;
+        }
         client.getAccountSettings(new JsonHttpResponseHandler(){
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
@@ -136,7 +150,7 @@ public class TimelineActivity extends AppCompatActivity implements ChangeStatusF
 
             @Override
             public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject error) {
-                Log.d(TAG, error.toString());
+                //Log.d(TAG, error.toString());
                 if (statusCode == 88 ) {
                     postHandleDelayed(0);
                 }
@@ -144,26 +158,15 @@ public class TimelineActivity extends AppCompatActivity implements ChangeStatusF
         });
     }
 
-    private void getProfilePic() {
-        client.getProfilePicUrl(new JsonHttpResponseHandler(){
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                try {
-                    profilePic = response.getString("profile_image_url");
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject error) {
-                Log.d(TAG, error.toString());
-                if (statusCode == 88 ) {
-                    postHandleDelayed(1);
-                }
-            }
-        },handle);
+    private Boolean isNetworkAvailable() {
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int     exitValue = ipProcess.waitFor();
+            return (exitValue == 0);
+        } catch (IOException e)          { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
+        return false;
     }
 
 }

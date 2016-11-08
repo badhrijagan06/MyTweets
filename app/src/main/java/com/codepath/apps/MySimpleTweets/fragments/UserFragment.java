@@ -13,8 +13,8 @@ import android.widget.TextView;
 
 import com.codepath.apps.MySimpleTweets.R;
 import com.codepath.apps.MySimpleTweets.TwitterApplication;
-import com.codepath.apps.MySimpleTweets.TwitterClient;
 import com.codepath.apps.MySimpleTweets.models.User;
+import com.codepath.apps.MySimpleTweets.utils.TwitterClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.squareup.picasso.Picasso;
 
@@ -107,4 +107,5 @@ public class UserFragment extends Fragment {
         tvFollowers.setText(user.getFollowersCount() + " Followers");
         tvFollowing.setText(user.getFollowingCount() + " Following");
     }
+
 }

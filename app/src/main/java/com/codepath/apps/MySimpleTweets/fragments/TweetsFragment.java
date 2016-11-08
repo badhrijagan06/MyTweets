@@ -15,12 +15,13 @@ import android.widget.ProgressBar;
 
 import com.codepath.apps.MySimpleTweets.R;
 import com.codepath.apps.MySimpleTweets.TwitterApplication;
-import com.codepath.apps.MySimpleTweets.TwitterClient;
 import com.codepath.apps.MySimpleTweets.adapters.TweetsAdapter;
 import com.codepath.apps.MySimpleTweets.models.Tweet;
 import com.codepath.apps.MySimpleTweets.utils.DividerItemDecoration;
 import com.codepath.apps.MySimpleTweets.utils.EndlessRecyclerViewScrollListener;
+import com.codepath.apps.MySimpleTweets.utils.TwitterClient;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import butterknife.BindView;
@@ -123,5 +124,16 @@ public abstract class TweetsFragment extends Fragment {
             }
         };
         handler.postDelayed(runnableCode, 60000);
+    }
+
+    protected Boolean isNetworkAvailable() {
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int     exitValue = ipProcess.waitFor();
+            return (exitValue == 0);
+        } catch (IOException e)          { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
+        return false;
     }
 }

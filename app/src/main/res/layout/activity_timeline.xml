@@ -6,7 +6,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fitsSystemWindows="true"
-        tools:context="com.codepath.apps.MySimpleTweets.TimelineActivity">
+        tools:context="com.codepath.apps.MySimpleTweets.activities.TimelineActivity">
 
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -19,8 +19,16 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@android:color/holo_blue_light"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
+            android:background="@color/blue"
+            app:popupTheme="@style/AppTheme.PopupOverlay" >
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:scaleType="fitXY"
+                android:adjustViewBounds="true"
+                android:src="@drawable/twitter_logo_white_on_blue"
+                />
+        </android.support.v7.widget.Toolbar>
 
         <com.astuetz.PagerSlidingTabStrip
             android:id="@+id/tabs"

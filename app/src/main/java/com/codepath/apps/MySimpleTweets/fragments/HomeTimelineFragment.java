@@ -3,6 +3,7 @@ package com.codepath.apps.MySimpleTweets.fragments;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.codepath.apps.MySimpleTweets.models.Tweet;
 import com.loopj.android.http.JsonHttpResponseHandler;
@@ -24,6 +25,10 @@ public class HomeTimelineFragment extends TweetsFragment {
 
 
     protected void populateTimeline(final long since_id, final long max_id) {
+        if (!isNetworkAvailable()) {
+            Toast.makeText(getActivity(), "Network not available! Try again later! ",Toast.LENGTH_LONG).show();
+            return;
+        }
 
         client.getHomeTimeline(new JsonHttpResponseHandler(){
             @Override
@@ -39,7 +44,7 @@ public class HomeTimelineFragment extends TweetsFragment {
 
             @Override
             public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject error) {
-                Log.d(TAG, error.toString());
+                //Log.d(TAG, error.toString());
                 if (statusCode == 88 ) {
                     postDelayed(since_id, max_id);
                 }
@@ -49,8 +54,12 @@ public class HomeTimelineFragment extends TweetsFragment {
 
     @Override
     protected void loadRecent() {
-        Tweet first = mTweets.get(0);
-        if (first != null) {
+        if (!isNetworkAvailable()) {
+            Toast.makeText(getActivity(), "Network not available! Try again later! ",Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (mTweets.size() > 0) {
+            Tweet first = mTweets.get(0);
             long since_id = first.getUid();
             client.getHomeTimeline(new JsonHttpResponseHandler() {
                 @Override

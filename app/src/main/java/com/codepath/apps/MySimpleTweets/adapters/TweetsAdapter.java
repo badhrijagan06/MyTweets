@@ -2,6 +2,8 @@ package com.codepath.apps.MySimpleTweets.adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.support.v4.app.FragmentManager;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
@@ -9,16 +11,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.codepath.apps.MySimpleTweets.R;
 import com.codepath.apps.MySimpleTweets.TwitterApplication;
 import com.codepath.apps.MySimpleTweets.activities.ProfileActivity;
+import com.codepath.apps.MySimpleTweets.fragments.ChangeStatusFragment;
 import com.codepath.apps.MySimpleTweets.models.Tweet;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -51,6 +56,11 @@ public class TweetsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         boolean set;
     }
 
+    class cache2 {
+        Long id;
+        String screen_name;
+    }
+
     class ViewHolder extends RecyclerView.ViewHolder /*implements View.OnClickListener*/{
         @BindView(R.id.tvBody) public TextView tvBody;
         @BindView(R.id.ivProfileImage) ImageView ivProfileImage;
@@ -64,6 +74,7 @@ public class TweetsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         ImageView ivReply;
         Context context;
         cache mcache1, mcache2;
+        cache2 mcache3;
 
         public ViewHolder(View itemView, Context context) {
             super(itemView);
@@ -76,6 +87,7 @@ public class TweetsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             ivReply = (ImageView)itemView.findViewById(R.id.ivReply);
             mcache1 = new cache();
             mcache2 = new cache();
+            mcache3 = new cache2();
             /*tvHeadline.setOnClickListener(this);
             ivThumbnail.setOnClickListener(this); */
 
@@ -171,6 +183,10 @@ public class TweetsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 final cache cache = (cache) v.getTag();
                 long id = cache.id;
                 final Boolean set = cache.set;
+                if (!isNetworkAvailable()) {
+                    Toast.makeText(mContext, "Network not available! Try again later! ",Toast.LENGTH_LONG).show();
+                    return;
+                }
                 TwitterApplication.getRestClient().postFavoriteCreate(new JsonHttpResponseHandler(){
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
@@ -199,6 +215,10 @@ public class TweetsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 final cache cache = (cache) v.getTag();
                 long id = cache.id;
                 final Boolean set = cache.set;
+                if (!isNetworkAvailable()) {
+                    Toast.makeText(mContext, "Network not available! Try again later! ",Toast.LENGTH_LONG).show();
+                    return;
+                }
                 TwitterApplication.getRestClient().postRetweetCreate(new JsonHttpResponseHandler(){
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
@@ -222,10 +242,42 @@ public class TweetsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         });
 
 
+        v.mcache3.screen_name = tweet.getUser().getScreenName();
+        v.mcache3.id = tweet.getUid();
+        v.ivReply.setTag(v.mcache3);
+
+
+        v.ivReply.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(final View v) {
+                if (!isNetworkAvailable()) {
+                    Toast.makeText(mContext, "Network not available! Try again later! ",Toast.LENGTH_LONG).show();
+                    return;
+                }
+                final cache2 cache = (cache2) v.getTag();
+                long id = cache.id;
+                String screenName = cache.screen_name;
+                AppCompatActivity activity = (AppCompatActivity)mContext;
+                FragmentManager fm = activity.getSupportFragmentManager();
+                ChangeStatusFragment changeStatusFragment = ChangeStatusFragment.newInstance(screenName, id);
+                changeStatusFragment.show(fm, "fragment_edit_name");
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
         return mTweets.size();
+    }
+
+    private Boolean isNetworkAvailable() {
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int     exitValue = ipProcess.waitFor();
+            return (exitValue == 0);
+        } catch (IOException e)          { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
+        return false;
     }
 }
